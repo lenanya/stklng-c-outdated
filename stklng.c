@@ -8,6 +8,7 @@
 
 #define uchar unsigned char
 #define liberate(ptr) free(ptr)
+#define da_liberate(da) da_free(da)
 
 typedef enum {
 	T_Int,
@@ -276,7 +277,7 @@ int main(int argc, uchar *argv[])
 	prstk(&s);
 	pop_many(&s, 3);
 
-	da_free(s);
+	da_liberate(s);
 
 	return 0;
 }
