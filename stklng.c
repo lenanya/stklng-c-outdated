@@ -44,14 +44,15 @@ void push(Stack *s,Node n) {
 	da_append(s, n);
 }
 
-void pop_many(Stack *s, size_t amount) {
+void pop_many_d(Stack *s, size_t amount, char *file, size_t line) {
 	if (amount > s->count) {
-		printf("[ERROR] Cannot pop more items than there are on the Stack\n");
+		printf("[ERROR] Cannot pop more items than there are on the Stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	s->count -= amount;
 }
 
+#define pop_many(s, a) pop_many_d(s, a, __FILE__, __LINE__)
 #define pop(s) pop_many(s, 1)
 
 void prstk(Stack *s) {
@@ -81,9 +82,9 @@ void prstk(Stack *s) {
 	printf("---- End of Stack ----\n\n");
 }
 
-void addi(Stack *s) {
+void addi_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
-		printf("[ERROR] addi requires 2 Integers at the top of the stack\n");
+		printf("[ERROR] addi requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	int addend = s->items[s->count-1].v.i;
@@ -91,9 +92,11 @@ void addi(Stack *s) {
 	s->items[s->count-1].v.i += addend;
 }
 
-void addf(Stack *s) {
+#define addi(s) addi_d(s, __FILE__, __LINE__)
+
+void addf_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
-		printf("[ERROR] addf requires 2 Floats at the top of the stack\n");
+		printf("[ERROR] addf requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	float addend = s->items[s->count-1].v.f;
@@ -101,9 +104,11 @@ void addf(Stack *s) {
 	s->items[s->count-1].v.f += addend;
 }
 
-void isub(Stack *s) {
+#define addf(s) addf_d(s, __FILE__, __LINE__)
+
+void isub_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
-		printf("[ERROR] isub requires 2 Integers at the top of the stack\n");
+		printf("[ERROR] isub requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	int subtrahend = s->items[s->count-1].v.i;
@@ -111,9 +116,11 @@ void isub(Stack *s) {
 	s->items[s->count-1].v.i -= subtrahend;
 }
 
-void fsub(Stack *s) {
+#define isub(s) isub_d(s, __FILE__, __LINE__)
+
+void fsub_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
-		printf("[ERROR] fsub requires 2 Floats at the top of the stack\n");
+		printf("[ERROR] fsub requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	float subtrahend = s->items[s->count-1].v.f;
@@ -121,9 +128,11 @@ void fsub(Stack *s) {
 	s->items[s->count-1].v.f -= subtrahend;
 }
 
-void scat(Stack *s) {
+#define fsub(s) fsub_d(s, __FILE__, __LINE__)
+
+void scat_d(Stack *s, char* file, size_t line) {
 	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
-		printf("[ERROR] scat requires 2 Strings at the top of the stack\n");
+		printf("[ERROR] scat requires 2 Strings at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	char *second = s->items[s->count-1].v.s;
@@ -137,9 +146,11 @@ void scat(Stack *s) {
 	push(s, strres);
 }
 
-void icmp(Stack *s, CmpType t) {
+#define scat(s) scat_d(s, __FILE__, __LINE__)
+
+void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
-		printf("[ERROR] icmp requires 2 Integers at the top of the stack\n");
+		printf("[ERROR] icmp requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	int comperand_left, comperand_right;
@@ -167,15 +178,17 @@ void icmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] icmp requires valid comparison type!\n");
+			printf("[ERROR] icmp requires valid comparison type! [%s:%d]\n", file, line);
 			exit(1);
 	}
 	push(s, cmp_bool);
 }
 
-void fcmp(Stack *s, CmpType t) {
+#define icmp(s, t) icmp_d(s, t, __FILE__, __LINE__)
+
+void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
-		printf("[ERROR] fcmp requires 2 Floats at the top of the stack\n");
+		printf("[ERROR] fcmp requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
 	float comperand_left, comperand_right;
@@ -203,15 +216,17 @@ void fcmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] fcmp requires valid comparison type!\n");
+			printf("[ERROR] fcmp requires valid comparison type! [%s:%d]\n", file, line);
 			exit(1);
 	}
 	push(s, cmp_bool);
 }
 
-void scmp(Stack *s, CmpType t) {
+#define fcmp(s, t) fcmp_d(s, t, __FILE__, __LINE)
+
+void scmp_d(Stack *s, CmpType t, char* file, size_t *line) {
 	if (t != eq && t != ne) {
-		printf("[ERROR] scmp can only be done with eq or ne\n");
+		printf("[ERROR] scmp can only be done with eq or ne [%s:%d]\n", file, line);
 		exit(1);
 	}
 	char *comperand_left, *comperand_right;
@@ -227,11 +242,13 @@ void scmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
 			break;
 		default:
-			printf("[ERROR] scmp requires valid comparison type\n");
+			printf("[ERROR] scmp requires valid comparison type [%s:%s]\n", file, line);
 			exit(1);
 	}
 	push(s, cmp_bool);
 } 
+
+#define scmp(s, t) scmp_d(s, t, __FILE__, __LINE__);
 
 int main(int argc, char *argv[])
 {
@@ -255,6 +272,8 @@ int main(int argc, char *argv[])
 	scat(&s);
 	prstk(&s);
 	pop_many(&s, 3);
+
+	da_free(s);
 
 	return 0;
 }
