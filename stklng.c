@@ -6,6 +6,9 @@
 #define NOB_STRIP_PREFIX
 #include <nob.h>
 
+#define uchar unsigned char
+#define liberate(ptr) free(ptr)
+
 typedef enum {
 	T_Int,
 	T_Float,
@@ -26,7 +29,7 @@ typedef union {
 	int i;
 	float f;
 	bool b;
-	char * s;
+	uchar *s;
 } Value;
 
 typedef struct {
@@ -44,7 +47,7 @@ void push(Stack *s,Node n) {
 	da_append(s, n);
 }
 
-void pop_many_d(Stack *s, size_t amount, char *file, size_t line) {
+void pop_many_d(Stack *s, size_t amount, uchar *file, size_t line) {
 	if (amount > s->count) {
 		printf("[ERROR] Cannot pop more items than there are on the Stack [%s:%d]\n", file, line);
 		exit(1);
@@ -82,7 +85,7 @@ void prstk(Stack *s) {
 	printf("---- End of Stack ----\n\n");
 }
 
-void addi_d(Stack *s, char *file, size_t line) {
+void addi_d(Stack *s, uchar *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] addi requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -94,7 +97,7 @@ void addi_d(Stack *s, char *file, size_t line) {
 
 #define addi(s) addi_d(s, __FILE__, __LINE__)
 
-void addf_d(Stack *s, char *file, size_t line) {
+void addf_d(Stack *s, uchar *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
 		printf("[ERROR] addf requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -106,7 +109,7 @@ void addf_d(Stack *s, char *file, size_t line) {
 
 #define addf(s) addf_d(s, __FILE__, __LINE__)
 
-void isub_d(Stack *s, char *file, size_t line) {
+void isub_d(Stack *s, uchar *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] isub requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -118,7 +121,7 @@ void isub_d(Stack *s, char *file, size_t line) {
 
 #define isub(s) isub_d(s, __FILE__, __LINE__)
 
-void fsub_d(Stack *s, char *file, size_t line) {
+void fsub_d(Stack *s, uchar *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
 		printf("[ERROR] fsub requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -130,12 +133,12 @@ void fsub_d(Stack *s, char *file, size_t line) {
 
 #define fsub(s) fsub_d(s, __FILE__, __LINE__)
 
-void scat_d(Stack *s, char* file, size_t line) {
+void scat_d(Stack *s, uchar* file, size_t line) {
 	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
 		printf("[ERROR] scat requires 2 Strings at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
-	char *second = s->items[s->count-1].v.s;
+	uchar *second = s->items[s->count-1].v.s;
 	pop(s);
 	Node strres;
 	strres.t = T_String;
@@ -148,7 +151,7 @@ void scat_d(Stack *s, char* file, size_t line) {
 
 #define scat(s) scat_d(s, __FILE__, __LINE__)
 
-void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
+void icmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] icmp requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -186,7 +189,7 @@ void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 
 #define icmp(s, t) icmp_d(s, t, __FILE__, __LINE__)
 
-void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
+void fcmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
 		printf("[ERROR] fcmp requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -224,12 +227,12 @@ void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
 
 #define fcmp(s, t) fcmp_d(s, t, __FILE__, __LINE)
 
-void scmp_d(Stack *s, CmpType t, char* file, size_t *line) {
+void scmp_d(Stack *s, CmpType t, uchar* file, size_t *line) {
 	if (t != eq && t != ne) {
 		printf("[ERROR] scmp can only be done with eq or ne [%s:%d]\n", file, line);
 		exit(1);
 	}
-	char *comperand_left, *comperand_right;
+	uchar *comperand_left, *comperand_right;
 	comperand_left = s->items[s->count-1].v.s;
 	comperand_right = s->items[s->count-2].v.s;
 	Node cmp_bool;
@@ -250,16 +253,16 @@ void scmp_d(Stack *s, CmpType t, char* file, size_t *line) {
 
 #define scmp(s, t) scmp_d(s, t, __FILE__, __LINE__);
 
-int main(int argc, char *argv[])
+int main(int argc, uchar *argv[])
 {
 	Stack s = {0};
 	Node strn1, strn2, strn3;
 	strn1.t = T_String;
 	strn2.t = T_String;
 	strn3.t = T_String;
-	char *str1 = "ur ";
-	char *str2 = "mom ";
-	char *str3 = "gey";
+	uchar *str1 = "ur ";
+	uchar *str2 = "mom ";
+	uchar *str3 = "gey";
 	strn1.v.s = str1;
 	strn2.v.s = str2;
 	strn3.v.s = str3;
