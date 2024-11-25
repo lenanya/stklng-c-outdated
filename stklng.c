@@ -44,6 +44,33 @@ typedef struct {
 	Node *items;
 } Stack;
 
+typedef enum {
+	F_push,
+	F_pop,
+	F_pop_many,
+	F_addi,
+	F_addf,
+	F_scat,
+	F_isub,
+	F_fsub,
+	F_icmp,
+	F_fcmp,
+	F_scmp,
+} FunctionType;
+
+typedef struct {
+	FunctionType ft;
+	CmpType ct;
+	Node n;
+	size_t op;
+} Function;
+
+typedef struct {
+	size_t capacity;
+	size_t count;
+	Function *items;
+} Program;
+
 void push(Stack *s,Node n) {
 	da_append(s, n);
 }
@@ -226,9 +253,9 @@ void fcmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
 	push(s, cmp_bool);
 }
 
-#define fcmp(s, t) fcmp_d(s, t, __FILE__, __LINE)
+#define fcmp(s, t) fcmp_d(s, t, __FILE__, __LINE__)
 
-void scmp_d(Stack *s, CmpType t, uchar* file, size_t *line) {
+void scmp_d(Stack *s, CmpType t, uchar* file, size_t line) {
 	if (t != eq && t != ne) {
 		printf("[ERROR] scmp can only be done with eq or ne [%s:%d]\n", file, line);
 		exit(1);
@@ -254,30 +281,81 @@ void scmp_d(Stack *s, CmpType t, uchar* file, size_t *line) {
 
 #define scmp(s, t) scmp_d(s, t, __FILE__, __LINE__);
 
+void eval(Stack *s, Function f) {
+	switch (f.ft) {
+		case (F_push):
+			push(s, f.n);
+			break;
+		case (F_pop):
+			pop(s);
+			break;
+		case (F_pop_many):
+			pop_many(s, f.op);
+			break;
+		case (F_addi):
+			addi(s);
+			break;
+		case (F_addf):
+			addf(s);
+			break;
+		case (F_isub):
+			isub(s);
+			break;
+		case (F_fsub):
+			fsub(s);
+			break;
+		case (F_scat):
+			scat(s);
+			break;
+		case (F_icmp):
+			icmp(s, f.ct);
+			break;
+		case (F_fcmp):
+			fcmp(s, f.ct);
+			break;
+		case (F_scmp):
+			scmp(s, f.ct);
+			break;
+		default:
+			printf("[ERROR] Invalid Function Type called");
+			exit(1);
+	}
+}
+
 int main(int argc, uchar *argv[])
 {
+	Program p = {0};
+
+	Function f1;
+	f1.ft = F_push;
+	Node n1;
+	n1.t = T_Int;
+	n1.v.i = 69;
+	f1.n = n1;
+
+	Function f2;
+	f2.ft = F_push;
+	Node n2;
+	n2.t = T_Int;
+	n2.v.i = 54;
+	f2.n = n2;
+
+	Function f3;
+	f3.ft = F_addi;
+
+	da_append(&p, f1);
+	da_append(&p, f2);
+	da_append(&p, f3);
+
 	Stack s = {0};
-	Node strn1, strn2, strn3;
-	strn1.t = T_String;
-	strn2.t = T_String;
-	strn3.t = T_String;
-	uchar *str1 = "ur ";
-	uchar *str2 = "mom ";
-	uchar *str3 = "gey";
-	strn1.v.s = str1;
-	strn2.v.s = str2;
-	strn3.v.s = str3;
-	push(&s, strn1);
-	push(&s, strn2);
-	push(&s, strn3);
+
+	for (size_t i = 0; i < p.count; ++i) {
+		eval(&s, p.items[i]);
+	}
+
 	prstk(&s);
-	scat(&s);
-	prstk(&s);
-	scat(&s);
-	prstk(&s);
-	pop_many(&s, 3);
 
 	da_liberate(s);
-
+	da_liberate(p);
 	return 0;
 }
