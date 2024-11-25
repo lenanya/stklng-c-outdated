@@ -95,6 +95,26 @@ void addf(Stack *s) {
 	s->items[s->count-1].v.f += addend;
 }
 
+void isub(Stack *s) {
+	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
+		printf("[ERROR] isub requires 2 Integers at the top of the stack\n");
+		exit(1);
+	}
+	int subtrahend = s->items[s->count-1].v.i;
+	pop(s);
+	s->items[s->count-1].v.i -= subtrahend;
+}
+
+void fsub(Stack *s) {
+	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
+		printf("[ERROR] fsub requires 2 Floats at the top of the stack\n");
+		exit(1);
+	}
+	float subtrahend = s->items[s->count-1].v.f;
+	pop(s);
+	s->items[s->count-1].v.f -= subtrahend;
+}
+
 void scat(Stack *s) {
 	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
 		printf("[ERROR] scat requires 2 Strings at the top of the stack\n");
