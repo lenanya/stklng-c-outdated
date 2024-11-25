@@ -95,6 +95,22 @@ void addf(Stack *s) {
 	s->items[s->count-1].v.f += addend;
 }
 
+void scat(Stack *s) {
+	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
+		printf("[ERROR] scat requires 2 Strings at the top of the stack\n");
+		exit(1);
+	}
+	char *second = s->items[s->count-1].v.s;
+	pop(s);
+	Node strres;
+	strres.t = T_String;
+	strres.v.s = malloc(strlen(s->items[s->count-1].v.s + strlen(second)));
+	strres.v.s = strcat(strres.v.s, s->items[s->count-1].v.s);
+	strres.v.s = strcat(strres.v.s, second);
+	pop(s);
+	push(s, strres);
+}
+
 void icmp(Stack *s, CmpType t) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] icmp requires 2 Integers at the top of the stack\n");
@@ -161,22 +177,56 @@ void fcmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] icmp requires valid comparison type!");
+			printf("[ERROR] fcmp requires valid comparison type!");
 			exit(1);
 	}
 	push(s, cmp_bool);
 }
 
+void scmp(Stack *s, CmpType t) {
+	if (t != eq && t != ne) {
+		printf("[ERROR] scmp can only be done with eq or ne");
+		exit(1);
+	}
+	char *comperand_left, *comperand_right;
+	comperand_left = s->items[s->count-1].v.s;
+	comperand_right = s->items[s->count-2].v.s;
+	Node cmp_bool;
+	cmp_bool.t = T_Bool;
+	switch (t) {
+		case (eq):
+			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
+			break;
+		case (le):
+			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
+			break;
+		default:
+			printf("[ERROR] scmp requires valid comparison type");
+			exit(1);
+	}
+	push(s, cmp_bool);
+} 
+
 int main(int argc, char *argv[])
 {
 	Stack s = {0};
-	push(&s, (Node){T_Int, {69}});
-	push(&s, (Node){T_Int, {34}});
-	push(&s, (Node){T_Int, {35}});
+	Node strn1, strn2, strn3;
+	strn1.t = T_String;
+	strn2.t = T_String;
+	strn3.t = T_String;
+	char *str1 = "ur ";
+	char *str2 = "mom ";
+	char *str3 = "gey";
+	strn1.v.s = str1;
+	strn2.v.s = str2;
+	strn3.v.s = str3;
+	push(&s, strn1);
+	push(&s, strn2);
+	push(&s, strn3);
 	prstk(&s);
-	addi(&s);
+	scat(&s);
 	prstk(&s);
-	icmp(&s, eq);
+	scat(&s);
 	prstk(&s);
 
 	return 0;
