@@ -44,9 +44,15 @@ void push(Stack *s,Node n) {
 	da_append(s, n);
 }
 
-void pop(Stack *s) {
-	s->count -= 1;
+void pop_many(Stack *s, size_t amount) {
+	if (amount > s->count) {
+		printf("[ERROR] Cannot pop more items than there are on the Stack\n");
+		exit(1);
+	}
+	s->count -= amount;
 }
+
+#define pop(s) pop_many(s, 1)
 
 void prstk(Stack *s) {
 	printf("----     Stack    ----\n");
@@ -161,7 +167,7 @@ void icmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] icmp requires valid comparison type!");
+			printf("[ERROR] icmp requires valid comparison type!\n");
 			exit(1);
 	}
 	push(s, cmp_bool);
@@ -197,7 +203,7 @@ void fcmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] fcmp requires valid comparison type!");
+			printf("[ERROR] fcmp requires valid comparison type!\n");
 			exit(1);
 	}
 	push(s, cmp_bool);
@@ -205,7 +211,7 @@ void fcmp(Stack *s, CmpType t) {
 
 void scmp(Stack *s, CmpType t) {
 	if (t != eq && t != ne) {
-		printf("[ERROR] scmp can only be done with eq or ne");
+		printf("[ERROR] scmp can only be done with eq or ne\n");
 		exit(1);
 	}
 	char *comperand_left, *comperand_right;
@@ -221,7 +227,7 @@ void scmp(Stack *s, CmpType t) {
 			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
 			break;
 		default:
-			printf("[ERROR] scmp requires valid comparison type");
+			printf("[ERROR] scmp requires valid comparison type\n");
 			exit(1);
 	}
 	push(s, cmp_bool);
@@ -248,6 +254,7 @@ int main(int argc, char *argv[])
 	prstk(&s);
 	scat(&s);
 	prstk(&s);
+	pop_many(&s, 3);
 
 	return 0;
 }
