@@ -5,8 +5,9 @@
 #define NOB_IMPLEMENTATION
 #define NOB_STRIP_PREFIX
 #include <nob.h>
+#define ALEXER_IMPLEMENTATION
+#include <alexer.h>
 
-#define uchar unsigned char
 #define liberate(ptr) free(ptr)
 #define da_liberate(da) da_free(da)
 
@@ -30,7 +31,7 @@ typedef union {
 	int i;
 	float f;
 	bool b;
-	uchar *s;
+	char *s;
 } Value;
 
 typedef struct {
@@ -56,6 +57,7 @@ typedef enum {
 	F_icmp,
 	F_fcmp,
 	F_scmp,
+	F_prstk,
 } FunctionType;
 
 typedef struct {
@@ -75,7 +77,7 @@ void push(Stack *s,Node n) {
 	da_append(s, n);
 }
 
-void pop_many_d(Stack *s, size_t amount, uchar *file, size_t line) {
+void pop_many_d(Stack *s, size_t amount, char *file, size_t line) {
 	if (amount > s->count) {
 		printf("[ERROR] Cannot pop more items than there are on the Stack [%s:%d]\n", file, line);
 		exit(1);
@@ -113,7 +115,7 @@ void prstk(Stack *s) {
 	printf("---- End of Stack ----\n\n");
 }
 
-void addi_d(Stack *s, uchar *file, size_t line) {
+void addi_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] addi requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -125,7 +127,7 @@ void addi_d(Stack *s, uchar *file, size_t line) {
 
 #define addi(s) addi_d(s, __FILE__, __LINE__)
 
-void addf_d(Stack *s, uchar *file, size_t line) {
+void addf_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
 		printf("[ERROR] addf requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -137,7 +139,7 @@ void addf_d(Stack *s, uchar *file, size_t line) {
 
 #define addf(s) addf_d(s, __FILE__, __LINE__)
 
-void isub_d(Stack *s, uchar *file, size_t line) {
+void isub_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] isub requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -149,7 +151,7 @@ void isub_d(Stack *s, uchar *file, size_t line) {
 
 #define isub(s) isub_d(s, __FILE__, __LINE__)
 
-void fsub_d(Stack *s, uchar *file, size_t line) {
+void fsub_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
 		printf("[ERROR] fsub requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -161,12 +163,12 @@ void fsub_d(Stack *s, uchar *file, size_t line) {
 
 #define fsub(s) fsub_d(s, __FILE__, __LINE__)
 
-void scat_d(Stack *s, uchar* file, size_t line) {
+void scat_d(Stack *s, char* file, size_t line) {
 	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
 		printf("[ERROR] scat requires 2 Strings at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
 	}
-	uchar *second = s->items[s->count-1].v.s;
+	char *second = s->items[s->count-1].v.s;
 	pop(s);
 	Node strres;
 	strres.t = T_String;
@@ -179,7 +181,7 @@ void scat_d(Stack *s, uchar* file, size_t line) {
 
 #define scat(s) scat_d(s, __FILE__, __LINE__)
 
-void icmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
+void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
 		printf("[ERROR] icmp requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -217,7 +219,7 @@ void icmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
 
 #define icmp(s, t) icmp_d(s, t, __FILE__, __LINE__)
 
-void fcmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
+void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
 		printf("[ERROR] fcmp requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
 		exit(1);
@@ -255,12 +257,12 @@ void fcmp_d(Stack *s, CmpType t, uchar *file, size_t line) {
 
 #define fcmp(s, t) fcmp_d(s, t, __FILE__, __LINE__)
 
-void scmp_d(Stack *s, CmpType t, uchar* file, size_t line) {
+void scmp_d(Stack *s, CmpType t, char* file, size_t line) {
 	if (t != eq && t != ne) {
 		printf("[ERROR] scmp can only be done with eq or ne [%s:%d]\n", file, line);
 		exit(1);
 	}
-	uchar *comperand_left, *comperand_right;
+	char *comperand_left, *comperand_right;
 	comperand_left = s->items[s->count-1].v.s;
 	comperand_right = s->items[s->count-2].v.s;
 	Node cmp_bool;
@@ -316,46 +318,136 @@ void eval(Stack *s, Function f) {
 		case (F_scmp):
 			scmp(s, f.ct);
 			break;
+		case (F_prstk):
+			prstk(s);
+			break;
 		default:
 			printf("[ERROR] Invalid Function Type called");
 			exit(1);
 	}
 }
 
-int main(int argc, uchar *argv[])
-{
-	Program p = {0};
-
-	Function f1;
-	f1.ft = F_push;
-	Node n1;
-	n1.t = T_Int;
-	n1.v.i = 69;
-	f1.n = n1;
-
-	Function f2;
-	f2.ft = F_push;
-	Node n2;
-	n2.t = T_Int;
-	n2.v.i = 54;
-	f2.n = n2;
-
-	Function f3;
-	f3.ft = F_addi;
-
-	da_append(&p, f1);
-	da_append(&p, f2);
-	da_append(&p, f3);
-
+void exec(Program *p) {
 	Stack s = {0};
-
-	for (size_t i = 0; i < p.count; ++i) {
-		eval(&s, p.items[i]);
+	for (size_t i = 0; i < p->count; ++i) {
+		eval(&s, p->items[i]);
 	}
 
 	prstk(&s);
 
 	da_liberate(s);
-	da_liberate(p);
+	da_liberate(*p);
+}
+
+typedef enum {
+	P_semicolon,
+	P_count,
+} PunctIndex;
+
+const char *puncts[P_count] = {
+	[P_semicolon] = ";",
+};
+
+typedef enum {
+	K_push,
+	K_pop,
+	K_addi,
+	K_addf,
+	K_scat,
+	K_icmp,
+	K_fcmp,
+	K_scmp,
+	K_isub,
+	K_fsub,
+	K_prstk,
+	K_count,
+} KeywordIndex;
+
+const char *keywords[K_count] = {
+	[K_push] 	= "push",
+	[K_pop] 	= "pop",
+	[K_addi] 	= "addi",
+	[K_addf] 	= "addf",
+	[K_scat] 	= "scat",
+	[K_icmp] 	= "icmp",
+	[K_fcmp] 	= "fcmp",
+	[K_scmp] 	= "scmp",
+	[K_isub] 	= "isub",
+	[K_fsub] 	= "fsub",
+	[K_prstk] 	= "prstk",	
+};
+
+const char *comments[] = {
+	"//",
+};
+
+void createFromFile(char *fp, Program *p) {
+	String_Builder sb = {0};
+	read_entire_file(fp, &sb);
+	char *ps = malloc(sb.count);
+	String_View sv = sb_to_sv(sb);
+	sprintf(ps, SV_Fmt"\n", SV_Arg(sv));
+	Alexer l = alexer_create(fp, ps, strlen(ps));	
+	l.puncts = puncts;
+	l.puncts_count = ALEXER_ARRAY_LEN(puncts);
+	l.keywords = keywords;
+	l.keywords_count = ALEXER_ARRAY_LEN(keywords);
+	l.sl_comments = comments;
+	l.sl_comments_count = ALEXER_ARRAY_LEN(comments);
+	Alexer_Token t  = {0};
+	while (alexer_get_token(&l, &t)) {
+		if (!alexer_expect_id(&l, t, ALEXER_INT)) {
+			exit(1);
+		}
+		alexer_get_token(&l, &t);
+		if (!alexer_expect_id(&l, t, ALEXER_KEYWORD)) {
+			exit(1);
+		}
+		switch (ALEXER_INDEX(t.id)) {
+			case (K_push):
+				Function f;
+				f.ft = F_push;
+				alexer_get_token(&l, &t);
+				uint64_t expected[] = {ALEXER_INT}; // todo: add other kinds
+				if (!alexer_expect_one_of_ids(&l, t, expected, ALEXER_ARRAY_LEN(expected))) {
+					exit(1);
+				}
+				switch (ALEXER_KIND(t.id)) {
+					case (ALEXER_INT):
+						Node n;
+						n.t = T_Int;
+						n.v.i = t.int_value;
+						f.n = n;
+						da_append(p, f);	
+						break;
+					default:
+						UNREACHABLE("Other kinds of push not implemented");
+						break;
+				}
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+			default:
+				break;
+		}
+	}
+	
+	if (!alexer_expect_id(&l, t, ALEXER_END)) {
+		exit(1);
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc < 2) {
+		printf("[ERROR] You need to supply a program to run.");
+		exit(1);
+	}
+	char *fp = argv[1];
+	Program p = {0};
+	createFromFile(fp, &p);	
+	exec(&p);
+	
 	return 0;
 }
