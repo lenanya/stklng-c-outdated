@@ -402,7 +402,7 @@ void createFromFile(char *fp, Program *p) {
 		}
 		alexer_get_token(&l, &t);
 		l.diagf(t.loc, "INFO", "%s", alexer_kind_name(ALEXER_KIND(t.id)));
-		if (!alexer_expect_id(&l, t, ALEXER_KEYWORD)) {
+		if (!alexer_expect_id(&l, t, ALEXER_KEYWORD)) { // TODO: somehow fix ????????
 			exit(1);
 		}
 		Function f;
