@@ -396,19 +396,21 @@ void createFromFile(char *fp, Program *p) {
 	l.sl_comments_count = ALEXER_ARRAY_LEN(comments);
 	Alexer_Token t  = {0};
 	while (alexer_get_token(&l, &t)) {
+		l.diagf(t.loc, "INFO", "%s", alexer_kind_name(ALEXER_KIND(t.id)));
 		if (!alexer_expect_id(&l, t, ALEXER_INT)) {
 			exit(1);
 		}
 		alexer_get_token(&l, &t);
+		l.diagf(t.loc, "INFO", "%s", alexer_kind_name(ALEXER_KIND(t.id)));
 		if (!alexer_expect_id(&l, t, ALEXER_KEYWORD)) {
 			exit(1);
 		}
+		Function f;
 		switch (ALEXER_INDEX(t.id)) {
 			case (K_push):
-				Function f;
 				f.ft = F_push;
 				alexer_get_token(&l, &t);
-				uint64_t expected[] = {ALEXER_INT}; // todo: add other kinds
+				uint64_t expected[] = {ALEXER_INT}; // TODO: add other kinds
 				if (!alexer_expect_one_of_ids(&l, t, expected, ALEXER_ARRAY_LEN(expected))) {
 					exit(1);
 				}
@@ -428,6 +430,15 @@ void createFromFile(char *fp, Program *p) {
 				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
 					exit(1);
 				}
+				break;
+			case (K_addi):
+				f.ft = F_addi;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
 			default:
 				break;
 		}
