@@ -446,7 +446,7 @@ void createFromFile(char *fp, Program *p) {
 				da_append(p, f);
 				break;	
 			default:
-				break;
+				UNREACHABLE("Function not implemented or doesnt exist");
 		}
 	}
 	
