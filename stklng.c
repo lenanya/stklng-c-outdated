@@ -333,8 +333,6 @@ void exec(Program *p) {
 		eval(&s, p->items[i]);
 	}
 
-	prstk(&s);
-
 	da_liberate(s);
 	da_liberate(*p);
 }
@@ -396,15 +394,15 @@ void createFromFile(char *fp, Program *p) {
 	l.sl_comments_count = ALEXER_ARRAY_LEN(comments);
 	Alexer_Token t  = {0};
 	while (alexer_get_token(&l, &t)) {
-		l.diagf(t.loc, "INFO", "%s", alexer_kind_name(ALEXER_KIND(t.id)));
 		if (!alexer_expect_id(&l, t, ALEXER_INT)) {
 			exit(1);
 		}
 		alexer_get_token(&l, &t);
-		l.diagf(t.loc, "INFO", "%s", alexer_kind_name(ALEXER_KIND(t.id)));
-		if (!alexer_expect_id(&l, t, ALEXER_KEYWORD)) { // TODO: somehow fix ????????
-			exit(1);
-		}
+		// TODO: check for keyword???
+		//uint64_t expected_kw[] = {K_addi, K_icmp, K_isub, K_pop, K_prstk, K_push, K_scat, K_scmp};
+		//if (!alexer_expect_one_of_ids(&l, t, expected_kw, ALEXER_ARRAY_LEN(expected_kw))) { // TODO: somehow fix ????????
+		//	exit(1);
+		//}
 		Function f;
 		switch (ALEXER_INDEX(t.id)) {
 			case (K_push):
@@ -439,6 +437,14 @@ void createFromFile(char *fp, Program *p) {
 				}
 				da_append(p, f);
 				break;
+			case (K_prstk):
+				f.ft = F_prstk;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;	
 			default:
 				break;
 		}
