@@ -28,7 +28,7 @@ typedef enum {
 } CmpType;
 
 typedef union {
-	int i;
+	size_t i;
 	float f;
 	bool b;
 	char *s;
@@ -79,7 +79,7 @@ void push(Stack *s,Node n) {
 
 void pop_many_d(Stack *s, size_t amount, char *file, size_t line) {
 	if (amount > s->count) {
-		printf("[ERROR] Cannot pop more items than there are on the Stack [%s:%d]\n", file, line);
+		printf("[ERROR] Cannot pop more items than there are on the Stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	s->count -= amount;
@@ -93,20 +93,20 @@ void prstk(Stack *s) {
 	for (size_t i = 0; i < s->count; ++i) {
 		switch (s->items[i].t) {
 			case (T_Int):
-				printf("%d: Int: %d\n", i, s->items[i].v.i);
+				printf("%ld: Int: %ld\n", i, s->items[i].v.i);
 				break;
 			case (T_Float):
-				printf("%d: Float: %f\n", i, s->items[i].v.f);
+				printf("%ld: Float: %f\n", i, s->items[i].v.f);
 				break;
 			case (T_Bool):
 				if (s->items[i].v.b == 0) {
-					printf("%d: Bool: false\n", i);
+					printf("%ld: Bool: false\n", i);
 				} else {
-					printf("%d: Bool: true\n", i);
+					printf("%ld: Bool: true\n", i);
 				}
 				break;
 			case (T_String):
-				printf("%d: String: %s\n", i, s->items[i].v.s);
+				printf("%ld: String: %s\n", i, s->items[i].v.s);
 				break;
 			default:
 				break;
@@ -117,7 +117,7 @@ void prstk(Stack *s) {
 
 void addi_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
-		printf("[ERROR] addi requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] addi requires 2 Integers at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	int addend = s->items[s->count-1].v.i;
@@ -129,7 +129,7 @@ void addi_d(Stack *s, char *file, size_t line) {
 
 void addf_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
-		printf("[ERROR] addf requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] addf requires 2 Floats at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	float addend = s->items[s->count-1].v.f;
@@ -141,7 +141,7 @@ void addf_d(Stack *s, char *file, size_t line) {
 
 void isub_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
-		printf("[ERROR] isub requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] isub requires 2 Integers at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	int subtrahend = s->items[s->count-1].v.i;
@@ -153,7 +153,7 @@ void isub_d(Stack *s, char *file, size_t line) {
 
 void fsub_d(Stack *s, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
-		printf("[ERROR] fsub requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] fsub requires 2 Floats at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	float subtrahend = s->items[s->count-1].v.f;
@@ -165,7 +165,7 @@ void fsub_d(Stack *s, char *file, size_t line) {
 
 void scat_d(Stack *s, char* file, size_t line) {
 	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
-		printf("[ERROR] scat requires 2 Strings at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] scat requires 2 Strings at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	char *second = s->items[s->count-1].v.s;
@@ -183,7 +183,7 @@ void scat_d(Stack *s, char* file, size_t line) {
 
 void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Int || s->items[s->count - 2].t != T_Int || s->count < 2) {
-		printf("[ERROR] icmp requires 2 Integers at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] icmp requires 2 Integers at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	int comperand_left, comperand_right;
@@ -211,7 +211,7 @@ void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] icmp requires valid comparison type! [%s:%d]\n", file, line);
+			printf("[ERROR] icmp requires valid comparison type! [%s:%ld]\n", file, line);
 			exit(1);
 	}
 	push(s, cmp_bool);
@@ -221,7 +221,7 @@ void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 
 void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
 	if (s->items[s->count-1].t != T_Float || s->items[s->count - 2].t != T_Float || s->count < 2) {
-		printf("[ERROR] fcmp requires 2 Floats at the top of the stack [%s:%d]\n", file, line);
+		printf("[ERROR] fcmp requires 2 Floats at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	float comperand_left, comperand_right;
@@ -249,7 +249,7 @@ void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
 			cmp_bool.v.b = comperand_left != comperand_right;
 			break;
 		default:
-			printf("[ERROR] fcmp requires valid comparison type! [%s:%d]\n", file, line);
+			printf("[ERROR] fcmp requires valid comparison type! [%s:%ld]\n", file, line);
 			exit(1);
 	}
 	push(s, cmp_bool);
@@ -259,7 +259,7 @@ void fcmp_d(Stack *s, CmpType t, char *file, size_t line) {
 
 void scmp_d(Stack *s, CmpType t, char* file, size_t line) {
 	if (t != eq && t != ne) {
-		printf("[ERROR] scmp can only be done with eq or ne [%s:%d]\n", file, line);
+		printf("[ERROR] scmp can only be done with eq or ne [%s:%ld]\n", file, line);
 		exit(1);
 	}
 	char *comperand_left, *comperand_right;
@@ -275,7 +275,7 @@ void scmp_d(Stack *s, CmpType t, char* file, size_t line) {
 			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
 			break;
 		default:
-			printf("[ERROR] scmp requires valid comparison type [%s:%s]\n", file, line);
+			printf("[ERROR] scmp requires valid comparison type [%s:%ld]\n", file, line);
 			exit(1);
 	}
 	push(s, cmp_bool);
@@ -383,6 +383,7 @@ void createFromFile(char *fp, Program *p) {
 	String_Builder sb = {0};
 	read_entire_file(fp, &sb);
 	char *ps = malloc(sb.count);
+	printf("what the fuck (this needs to be here or it crashes????\n"); // DO NOT REMOVE 
 	String_View sv = sb_to_sv(sb);
 	sprintf(ps, SV_Fmt"\n", SV_Arg(sv));
 	Alexer l = alexer_create(fp, ps, strlen(ps));	
@@ -445,6 +446,26 @@ void createFromFile(char *fp, Program *p) {
 				}
 				da_append(p, f);
 				break;	
+			case (K_icmp):
+				printf("uh oh (not implemented)\n");
+				exit(1);
+				break;
+			case (K_isub):
+				f.ft = F_isub;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
+			case (K_pop):
+				f.ft = F_pop;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
 			default:
 				UNREACHABLE("Function not implemented or doesnt exist");
 		}

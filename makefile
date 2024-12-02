@@ -1,4 +1,4 @@
 all: stklng
 
 stklng: stklng.c
-	cc stklng.c -o stklng
+	cc stklng.c -o stklng -Wall -Wextra -ggdb

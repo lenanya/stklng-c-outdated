@@ -3,3 +3,8 @@
 30 push 35;
 40 addi;
 50 prstk;
+60 push 35;
+70 isub;
+80 prstk;
+90 pop;
+100 prstk;
