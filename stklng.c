@@ -382,8 +382,7 @@ const char *comments[] = {
 void createFromFile(char *fp, Program *p) {
 	String_Builder sb = {0};
 	read_entire_file(fp, &sb);
-	char *ps = malloc(sb.count);
-	printf("what the fuck (this needs to be here or it crashes????\n"); // DO NOT REMOVE 
+	char *ps = malloc(sb.count + 1);
 	String_View sv = sb_to_sv(sb);
 	sprintf(ps, SV_Fmt"\n", SV_Arg(sv));
 	Alexer l = alexer_create(fp, ps, strlen(ps));	
