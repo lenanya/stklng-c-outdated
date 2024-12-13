@@ -58,6 +58,7 @@ typedef enum {
 	F_fcmp,
 	F_scmp,
 	F_prstk,
+	F_print,
 } FunctionType;
 
 typedef struct {
@@ -283,6 +284,25 @@ void scmp_d(Stack *s, CmpType t, char* file, size_t line) {
 
 #define scmp(s, t) scmp_d(s, t, __FILE__, __LINE__);
 
+void print(Stack *s, size_t len) {
+	if (s->count < len) {
+		printf("[ERROR] Not enough characters on the Stack");
+		exit(1);
+	}
+	for (int i = len; i >= 0; --i) {
+		Node n = s->items[s->count - 1 - i];
+		if (n.t != T_Int) {
+			printf("[ERROR] Value to be printed not an integer");
+			exit(1);
+		}
+		if (n.v.i == 10) {
+			printf("\n");
+		} else {
+			printf("%c", (int)n.v.i);
+		}
+	}
+}
+
 void eval(Stack *s, Function f) {
 	switch (f.ft) {
 		case (F_push):
@@ -321,6 +341,9 @@ void eval(Stack *s, Function f) {
 		case (F_prstk):
 			prstk(s);
 			break;
+		case (F_print):
+			print(s, f.n.v.i);
+			break;
 		default:
 			printf("[ERROR] Invalid Function Type called");
 			exit(1);
@@ -358,6 +381,7 @@ typedef enum {
 	K_isub,
 	K_fsub,
 	K_prstk,
+	K_print,
 	K_count,
 } KeywordIndex;
 
@@ -373,6 +397,7 @@ const char *keywords[K_count] = {
 	[K_isub] 	= "isub",
 	[K_fsub] 	= "fsub",
 	[K_prstk] 	= "prstk",	
+	[K_print]   = "print",
 };
 
 const char *comments[] = {
@@ -459,6 +484,22 @@ void createFromFile(char *fp, Program *p) {
 				break;
 			case (K_pop):
 				f.ft = F_pop;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
+			case (K_print):
+				f.ft = F_print;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_INT)) {
+					exit(1);
+				}
+				Node n;
+				n.t = T_Int;
+				n.v.i = t.int_value;
+				f.n = n;
 				alexer_get_token(&l, &t);
 				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
 					exit(1);

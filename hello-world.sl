@@ -1,0 +1,13 @@
+10 push 72;
+20 push 101;
+30 push 108;
+40 push 108;
+50 push 111;
+60 push 32;
+70 push 87;
+80 push 111;
+90 push 114;
+100 push 108;
+110 push 100;
+115 push 10;
+120 print 11;
