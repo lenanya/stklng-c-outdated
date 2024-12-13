@@ -11,14 +11,14 @@
 #define liberate(ptr) free(ptr)
 #define da_liberate(da) da_free(da)
 
-typedef enum {
+typedef enum Type{
 	T_Int,
 	T_Float,
 	T_Bool,
 	T_String,
 } Type;
 
-typedef enum {
+typedef enum CmpType{
 	le,
 	lt,
 	ge,
@@ -27,25 +27,25 @@ typedef enum {
 	eq,
 } CmpType;
 
-typedef union {
+typedef union Value{
 	size_t i;
 	float f;
 	bool b;
 	char *s;
 } Value;
 
-typedef struct {
+typedef struct Node {
 	Type t;
 	Value v;
 } Node;
 
-typedef struct {
+typedef struct Stack{
 	size_t count;
 	size_t capacity;
 	Node *items;
 } Stack;
 
-typedef enum {
+typedef enum FunctionType{
 	F_push,
 	F_pop,
 	F_pop_many,
@@ -59,16 +59,19 @@ typedef enum {
 	F_scmp,
 	F_prstk,
 	F_print,
+	F_brn,
+	F_jmp,
 } FunctionType;
-
-typedef struct {
+ 
+typedef struct Function{
 	FunctionType ft;
 	CmpType ct;
 	Node n;
 	size_t op;
+	size_t index;
 } Function;
 
-typedef struct {
+typedef struct Program {
 	size_t capacity;
 	size_t count;
 	Function *items;
@@ -188,8 +191,8 @@ void icmp_d(Stack *s, CmpType t, char *file, size_t line) {
 		exit(1);
 	}
 	int comperand_left, comperand_right;
-	comperand_left = s->items[s->count-1].v.i;
-	comperand_right = s->items[s->count-2].v.i;
+	comperand_left = s->items[s->count-2].v.i;
+	comperand_right = s->items[s->count-1].v.i;
 	Node cmp_bool;
 	cmp_bool.t = T_Bool;
 	switch (t) {
@@ -303,7 +306,26 @@ void print(Stack *s, size_t len) {
 	}
 }
 
-void eval(Stack *s, Function f) {
+bool brn(Stack *s) {
+	if (s->items[s->count-1].t != T_Bool) {
+		printf("[ERROR] Cannot branch based on non boolean");
+		exit(1);
+	}
+	if (s->items[s->count-1].v.b == true) {
+		return true;
+	};
+	return false;
+}
+
+size_t getFunctionIndex(Program *p, size_t index) {
+	for (size_t i = 0; i < p->count; ++i) {
+		if (p->items[i].index == index) return i;
+	}
+	printf("[ERROR] Jumping to undefined");
+	exit(1);
+}
+
+size_t eval(Stack *s, Function f, size_t i, Program *p) {
 	switch (f.ft) {
 		case (F_push):
 			push(s, f.n);
@@ -344,23 +366,29 @@ void eval(Stack *s, Function f) {
 		case (F_print):
 			print(s, f.n.v.i);
 			break;
+		case (F_brn):
+			if (brn(s) == true) return getFunctionIndex(p, f.n.v.i);
+			break;
+		case (F_jmp):
+			return getFunctionIndex(p, f.n.v.i);
 		default:
 			printf("[ERROR] Invalid Function Type called");
 			exit(1);
 	}
+	return ++i;
 }
 
 void exec(Program *p) {
 	Stack s = {0};
-	for (size_t i = 0; i < p->count; ++i) {
-		eval(&s, p->items[i]);
+	for (size_t i = 0; i < p->count;) {
+		i = eval(&s, p->items[i], i, p);
 	}
 
 	da_liberate(s);
 	da_liberate(*p);
 }
 
-typedef enum {
+typedef enum PunctIndex {
 	P_semicolon,
 	P_count,
 } PunctIndex;
@@ -369,7 +397,7 @@ const char *puncts[P_count] = {
 	[P_semicolon] = ";",
 };
 
-typedef enum {
+typedef enum KeywordIndex{
 	K_push,
 	K_pop,
 	K_addi,
@@ -382,6 +410,14 @@ typedef enum {
 	K_fsub,
 	K_prstk,
 	K_print,
+	K_brn,
+	K_jmp,
+	K_le,
+	K_lt,
+	K_eq,
+	K_gt,
+	K_ge,
+	K_ne,
 	K_count,
 } KeywordIndex;
 
@@ -397,6 +433,14 @@ const char *keywords[K_count] = {
 	[K_isub] 	= "isub",
 	[K_fsub] 	= "fsub",
 	[K_prstk] 	= "prstk",	
+	[K_brn]		= "brn",
+	[K_jmp]		= "jmp",
+	[K_le] 		= "le",
+	[K_lt] 		= "lt",
+	[K_eq] 		= "eq",
+	[K_gt] 		= "gt",
+	[K_ge] 		= "ge",
+	[K_ne] 		= "ne",	
 	[K_print]   = "print",
 };
 
@@ -407,7 +451,7 @@ const char *comments[] = {
 void createFromFile(char *fp, Program *p) {
 	String_Builder sb = {0};
 	read_entire_file(fp, &sb);
-	char *ps = malloc(sb.count + 1); // we love off by one errors!
+	char *ps = malloc(sb.count * 2); // we love off by one errors!
 	String_View sv = sb_to_sv(sb);
 	sprintf(ps, SV_Fmt"\n", SV_Arg(sv));
 	Alexer l = alexer_create(fp, ps, strlen(ps));	
@@ -419,16 +463,17 @@ void createFromFile(char *fp, Program *p) {
 	l.sl_comments_count = ALEXER_ARRAY_LEN(comments);
 	Alexer_Token t  = {0};
 	while (alexer_get_token(&l, &t)) {
+		Function f;
 		if (!alexer_expect_id(&l, t, ALEXER_INT)) {
 			exit(1);
 		}
+		f.index = t.int_value;
 		alexer_get_token(&l, &t);
 		// TODO: check for keyword???
 		//uint64_t expected_kw[] = {K_addi, K_icmp, K_isub, K_pop, K_prstk, K_push, K_scat, K_scmp};
 		//if (!alexer_expect_one_of_ids(&l, t, expected_kw, ALEXER_ARRAY_LEN(expected_kw))) { // TODO: somehow fix ????????
 		//	exit(1);
 		//}
-		Function f;
 		switch (ALEXER_INDEX(t.id)) {
 			case (K_push):
 				f.ft = F_push;
@@ -471,8 +516,39 @@ void createFromFile(char *fp, Program *p) {
 				da_append(p, f);
 				break;	
 			case (K_icmp):
-				printf("uh oh (not implemented)\n");
-				exit(1);
+				f.ft = F_icmp;
+				alexer_get_token(&l, &t);
+				//uint64_t expected_ct[] = {K_le, K_ge, K_lt, K_gt, K_le, K_ne};
+				//if (!alexer_expect_one_of_ids(&l, t, expected_ct, ALEXER_ARRAY_LEN(expected_ct))) {
+				//	exit(1);
+				//}
+				switch (ALEXER_INDEX(t.id)) {
+					case (K_le):
+						f.ct = le;
+						break;
+					case (K_lt):
+						f.ct = lt;
+						break;
+					case (K_ge):
+						f.ct = ge;
+						break;
+					case (K_gt):
+						f.ct = gt;
+						break;
+					case (K_eq):
+						f.ct = eq;
+						break;
+					case (K_ne):
+						f.ct = ne;
+						break;
+					default:
+						UNREACHABLE("compare type doesnt exist");
+				}
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
 				break;
 			case (K_isub):
 				f.ft = F_isub;
@@ -506,6 +582,38 @@ void createFromFile(char *fp, Program *p) {
 				}
 				da_append(p, f);
 				break;
+			case (K_brn):
+				f.ft = F_brn;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_INT)) {
+					exit(1);
+				}
+				Node n2;
+				n2.t = T_Int;
+				n2.v.i = t.int_value;
+				f.n = n2;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
+			case (K_jmp):
+				f.ft = F_jmp;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_INT)) {
+					exit(1);
+				}
+				Node n3;
+				n3.t = T_Int;
+				n3.v.i = t.int_value;
+				f.n = n3;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
 			default:
 				UNREACHABLE("Function not implemented or doesnt exist");
 		}
@@ -514,6 +622,14 @@ void createFromFile(char *fp, Program *p) {
 	if (!alexer_expect_id(&l, t, ALEXER_END)) {
 		exit(1);
 	}
+}
+
+int sortByIndex(const void* a, const void* b) {
+	return ((Function*)a)->index - ((Function*)b)->index;
+}
+
+void sortFunctions(Program *p) {
+	qsort(p->items, p->count, sizeof(Function), sortByIndex);
 }
 
 int main(int argc, char *argv[])
@@ -525,6 +641,7 @@ int main(int argc, char *argv[])
 	char *fp = argv[1];
 	Program p = {0};
 	createFromFile(fp, &p);	
+	sortFunctions(&p);
 	exec(&p);
 	
 	return 0;

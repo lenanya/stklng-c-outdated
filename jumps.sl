@@ -1,0 +1,11 @@
+10 push 0;
+20 push 1;
+30 addi;
+50 push 10;
+60 icmp lt;
+70 brn 150;
+80 jmp 200;
+150 pop;
+160 pop;
+170 jmp 20;
+200 prstk;
