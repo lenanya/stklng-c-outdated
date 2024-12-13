@@ -1,7 +1,7 @@
 10 push 0;
 20 push 1;
 30 addi;
-50 push 10;
+50 push 1000000000;
 60 icmp lt;
 70 brn 150;
 80 jmp 200;
