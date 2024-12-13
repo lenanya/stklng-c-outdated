@@ -28,7 +28,7 @@ typedef enum CmpType{
 } CmpType;
 
 typedef union Value{
-	size_t i;
+	size_t i; // TODO: fix
 	float f;
 	bool b;
 	char *s;

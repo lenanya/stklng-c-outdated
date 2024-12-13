@@ -10,4 +10,5 @@
 100 push 108;
 110 push 100;
 115 push 10;
+116 prstk;
 120 print 11;
