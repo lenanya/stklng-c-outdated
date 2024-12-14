@@ -63,6 +63,7 @@ typedef enum FunctionType{
 	F_jmp,
 	F_gosub,
 	F_return,
+	F_swp,
 } FunctionType;
  
 typedef struct Function{
@@ -325,6 +326,19 @@ bool brn(Stack *s) {
 	return false;
 }
 
+void swp(Stack *s) {
+	if (s->count < 2) {
+		printf("[ERROR] swp requires at least 2 elements on the Stack");
+		exit(1);
+	}
+	Node temp = s->items[s->count-1];
+	pop(s);
+	Node temp2 = s->items[s->count-1];
+	pop(s);
+	push(s, temp);
+	push(s, temp2);
+}
+
 size_t getFunctionIndex(Program *p, size_t index) {
 	for (size_t i = 0; i < p->count; ++i) {
 		if (p->items[i].index == index) return i;
@@ -386,6 +400,9 @@ size_t eval(Stack *s, Function f, size_t i, Program *p, Returns *r) {
 			size_t newi = r->items[r->count-1];
 			r->count--;
 			return newi;
+		case (F_swp):
+			swp(s);
+			break;
 		default:
 			printf("[ERROR] Invalid Function Type called");
 			exit(1);
@@ -436,6 +453,9 @@ typedef enum KeywordIndex{
 	K_ne,
 	K_gosub,
 	K_return,
+	K_swp,
+	K_true,
+	K_false,
 	K_count,
 } KeywordIndex;
 
@@ -461,6 +481,9 @@ const char *keywords[K_count] = {
 	[K_ne] 		= "ne",	
 	[K_gosub]	= "gosub",
 	[K_return]	= "return",
+	[K_swp]		= "swp",
+	[K_true]	= "true",
+	[K_false]	= "false",
 	[K_print]   = "print",
 };
 
@@ -498,10 +521,13 @@ void createFromFile(char *fp, Program *p) {
 			case (K_push):
 				f.ft = F_push;
 				alexer_get_token(&l, &t);
-				uint64_t expected[] = {ALEXER_INT}; // TODO: add other kinds
-				if (!alexer_expect_one_of_ids(&l, t, expected, ALEXER_ARRAY_LEN(expected))) {
-					exit(1);
+				if (ALEXER_KIND(t.id) != ALEXER_INT) { // kinda hacky but works
+					if (ALEXER_INDEX(t.id) != K_true && ALEXER_INDEX(t.id) != K_false) {
+						printf("[ERROR] Pushing a Boolean requires `true` or `false`\n");
+						exit(1);
+					}
 				}
+
 				switch (ALEXER_KIND(t.id)) {
 					case (ALEXER_INT):
 						Node n;
@@ -509,6 +535,17 @@ void createFromFile(char *fp, Program *p) {
 						n.v.i = t.int_value;
 						f.n = n;
 						da_append(p, f);	
+						break;
+					case (ALEXER_KEYWORD):
+						Node nb;
+						nb.t = T_Bool;
+						if (ALEXER_INDEX(t.id) == K_true) {
+							nb.v.b = true;
+						} else {
+							nb.v.b = false;
+						}
+						f.n = nb;
+						da_append(p, f);
 						break;
 					default:
 						UNREACHABLE("Other kinds of push not implemented");
@@ -658,6 +695,14 @@ void createFromFile(char *fp, Program *p) {
 				}
 				da_append(p, f);
 				break;
+			case (K_swp):
+				f.ft = F_swp;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;	
 			default:
 				UNREACHABLE("Function not implemented or doesnt exist");
 		}
