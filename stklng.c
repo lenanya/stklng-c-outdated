@@ -28,7 +28,7 @@ typedef enum CmpType{
 } CmpType;
 
 typedef union Value{
-	size_t i; // TODO: fix
+	int i;
 	float f;
 	bool b;
 	char *s;
@@ -106,7 +106,7 @@ void prstk(Stack *s) {
 	for (size_t i = 0; i < s->count; ++i) {
 		switch (s->items[i].t) {
 			case (T_Int):
-				printf("%ld: Int: %ld\n", i, s->items[i].v.i);
+				printf("%ld: Int: %d\n", i, s->items[i].v.i);
 				break;
 			case (T_Float):
 				printf("%ld: Float: %f\n", i, s->items[i].v.f);
@@ -725,7 +725,7 @@ int main(int argc, char *argv[])
 {
 	if (argc < 2) {
 		printf("[ERROR] You need to supply a program to run.");
-		exit(1);
+		return 1;
 	}
 	char *fp = argv[1];
 	Program p = {0};
