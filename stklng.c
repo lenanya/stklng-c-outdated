@@ -61,6 +61,8 @@ typedef enum FunctionType{
 	F_print,
 	F_brn,
 	F_jmp,
+	F_gosub,
+	F_return,
 } FunctionType;
  
 typedef struct Function{
@@ -77,7 +79,13 @@ typedef struct Program {
 	Function *items;
 } Program;
 
-void push(Stack *s,Node n) {
+typedef struct Returns{
+	size_t count;
+	size_t capacity;
+	size_t *items;
+} Returns;
+
+void push(Stack *s, Node n) {
 	da_append(s, n);
 }
 
@@ -325,7 +333,7 @@ size_t getFunctionIndex(Program *p, size_t index) {
 	exit(1);
 }
 
-size_t eval(Stack *s, Function f, size_t i, Program *p) {
+size_t eval(Stack *s, Function f, size_t i, Program *p, Returns *r) {
 	switch (f.ft) {
 		case (F_push):
 			push(s, f.n);
@@ -371,6 +379,13 @@ size_t eval(Stack *s, Function f, size_t i, Program *p) {
 			break;
 		case (F_jmp):
 			return getFunctionIndex(p, f.n.v.i);
+		case (F_gosub):
+			da_append(r, i+1);
+			return getFunctionIndex(p, f.n.v.i);
+		case (F_return):
+			size_t newi = r->items[r->count-1];
+			r->count--;
+			return newi;
 		default:
 			printf("[ERROR] Invalid Function Type called");
 			exit(1);
@@ -378,14 +393,15 @@ size_t eval(Stack *s, Function f, size_t i, Program *p) {
 	return ++i;
 }
 
-void exec(Program *p) {
+void exec(Program *p, Returns *r) {
 	Stack s = {0};
 	for (size_t i = 0; i < p->count;) {
-		i = eval(&s, p->items[i], i, p);
+		i = eval(&s, p->items[i], i, p, r);
 	}
 
 	da_liberate(s);
 	da_liberate(*p);
+	da_liberate(*r);
 }
 
 typedef enum PunctIndex {
@@ -418,6 +434,8 @@ typedef enum KeywordIndex{
 	K_gt,
 	K_ge,
 	K_ne,
+	K_gosub,
+	K_return,
 	K_count,
 } KeywordIndex;
 
@@ -441,6 +459,8 @@ const char *keywords[K_count] = {
 	[K_gt] 		= "gt",
 	[K_ge] 		= "ge",
 	[K_ne] 		= "ne",	
+	[K_gosub]	= "gosub",
+	[K_return]	= "return",
 	[K_print]   = "print",
 };
 
@@ -614,6 +634,30 @@ void createFromFile(char *fp, Program *p) {
 				}
 				da_append(p, f);
 				break;
+			case (K_gosub):
+				f.ft = F_gosub;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_INT)) {
+					exit(1);
+				}
+				Node n4;
+				n4.t = T_Int;
+				n4.v.i = t.int_value;
+				f.n = n4;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
+			case (K_return):
+				f.ft = F_return;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
 			default:
 				UNREACHABLE("Function not implemented or doesnt exist");
 		}
@@ -640,9 +684,10 @@ int main(int argc, char *argv[])
 	}
 	char *fp = argv[1];
 	Program p = {0};
+	Returns r = {0};
 	createFromFile(fp, &p);	
 	sortFunctions(&p);
-	exec(&p);
+	exec(&p, &r);
 	
 	return 0;
 }
