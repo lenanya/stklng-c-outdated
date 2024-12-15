@@ -1,8 +1,8 @@
 #define NOB_IMPLEMENTATION
 #define NOB_STRIP_PREFIX
-#include <nob.h>
+#include "nob.h"
 #define ALEXER_IMPLEMENTATION
-#include <alexer.h>
+#include "alexer.h"
 
 #define liberate(ptr) free(ptr)
 #define da_liberate(da) da_free(da)
