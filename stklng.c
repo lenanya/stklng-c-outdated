@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #define NOB_IMPLEMENTATION
 #define NOB_STRIP_PREFIX
 #include <nob.h>
