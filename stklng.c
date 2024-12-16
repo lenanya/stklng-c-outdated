@@ -60,6 +60,8 @@ typedef enum FunctionType{
 	F_gosub,
 	F_return,
 	F_swp,
+	F_cstr,
+	F_dup,
 } FunctionType;
  
 typedef struct Function{
@@ -115,7 +117,7 @@ void prstk(Stack *s) {
 				}
 				break;
 			case (T_String):
-				printf("%ld: String: %s\n", i, s->items[i].v.s);
+				printf("%ld: String:\n\"%s\"\n", i, s->items[i].v.s);
 				break;
 			default:
 				break;
@@ -172,7 +174,7 @@ void fsub_d(Stack *s, char *file, size_t line) {
 
 #define fsub(s) fsub_d(s, __FILE__, __LINE__)
 
-void scat_d(Stack *s, char* file, size_t line) {
+void scat_d(Stack *s, char* file, size_t line) { // TODO: fix
 	if (s->items[s->count-1].t != T_String || s->items[s->count - 2].t != T_String || s->count < 2) {
 		printf("[ERROR] scat requires 2 Strings at the top of the stack [%s:%ld]\n", file, line);
 		exit(1);
@@ -181,7 +183,7 @@ void scat_d(Stack *s, char* file, size_t line) {
 	pop(s);
 	Node strres;
 	strres.t = T_String;
-	strres.v.s = malloc(strlen(s->items[s->count-1].v.s + strlen(second)));
+	strres.v.s = malloc(strlen(s->items[s->count-1].v.s) + strlen(second));
 	strres.v.s = strcat(strres.v.s, s->items[s->count-1].v.s);
 	strres.v.s = strcat(strres.v.s, second);
 	pop(s);
@@ -278,9 +280,9 @@ void scmp_d(Stack *s, CmpType t, char* file, size_t line) {
 	cmp_bool.t = T_Bool;
 	switch (t) {
 		case (eq):
-			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
+			cmp_bool.v.b = !strcmp(comperand_left, comperand_right);
 			break;
-		case (le):
+		case (ne):
 			cmp_bool.v.b = strcmp(comperand_left, comperand_right);
 			break;
 		default:
@@ -294,13 +296,21 @@ void scmp_d(Stack *s, CmpType t, char* file, size_t line) {
 
 void print(Stack *s, size_t len) {
 	if (s->count < len) {
-		printf("[ERROR] Not enough characters on the Stack");
+		printf("[ERROR] Not enough nodes on the Stack\n");
 		exit(1);
+	}
+	if (s->items[s->count - 1].t == T_String) {
+		if (len > 1) {
+			printf("[ERROR] Printing a string allows only a length of 1\n");
+			exit(1);
+		}
+		printf("%s", s->items[s->count - 1].v.s);
+		return;
 	}
 	for (int i = len; i >= 0; --i) {
 		Node n = s->items[s->count - 1 - i];
 		if (n.t != T_Int) {
-			printf("[ERROR] Value to be printed not an integer");
+			printf("[ERROR] Value to be printed not an integer\n");
 			exit(1);
 		}
 		if (n.v.i == 10) {
@@ -313,7 +323,7 @@ void print(Stack *s, size_t len) {
 
 bool brn(Stack *s) {
 	if (s->items[s->count-1].t != T_Bool) {
-		printf("[ERROR] Cannot branch based on non boolean");
+		printf("[ERROR] Cannot branch based on non boolean\n");
 		exit(1);
 	}
 	if (s->items[s->count-1].v.b == true) {
@@ -324,7 +334,7 @@ bool brn(Stack *s) {
 
 void swp(Stack *s) {
 	if (s->count < 2) {
-		printf("[ERROR] swp requires at least 2 elements on the Stack");
+		printf("[ERROR] swp requires at least 2 elements on the Stack\n");
 		exit(1);
 	}
 	Node temp = s->items[s->count-1];
@@ -333,6 +343,31 @@ void swp(Stack *s) {
 	pop(s);
 	push(s, temp);
 	push(s, temp2);
+}
+
+void cstr(Stack *s, size_t len) {
+	if (s->count < len) {
+		printf("[ERROR] getstr requires enough integers on the stack\n");
+		exit(1);
+	}
+	Node n;
+	n.t = T_String;
+	n.v.s = malloc(len);
+	for (size_t i = 0; i < len; ++i) {
+		if (s->items[s->count - 1 - i].t != T_Int) {
+			printf("[ERROR] getstr requires integers\n");
+			exit(1);
+		}
+		n.v.s[i] = (char)s->items[s->count - len + i].v.i;
+	}
+	n.v.s[len] = 0;
+	pop_many(s, len);
+	push(s, n);
+}
+
+void ndup(Stack *s) {
+	Node top = s->items[s->count - 1];
+	push(s, top);
 }
 
 size_t getFunctionIndex(Program *p, size_t index) {
@@ -399,6 +434,12 @@ size_t eval(Stack *s, Function f, size_t i, Program *p, Returns *r) {
 		case (F_swp):
 			swp(s);
 			break;
+		case (F_cstr):
+			cstr(s, f.n.v.i);
+			break;
+		case (F_dup):
+			ndup(s);
+			break;
 		default:
 			printf("[ERROR] Invalid Function Type called");
 			exit(1);
@@ -452,6 +493,8 @@ typedef enum KeywordIndex{
 	K_swp,
 	K_true,
 	K_false,
+	K_cstr,
+	K_dup,
 	K_count,
 } KeywordIndex;
 
@@ -480,6 +523,8 @@ const char *keywords[K_count] = {
 	[K_swp]		= "swp",
 	[K_true]	= "true",
 	[K_false]	= "false",
+	[K_cstr] 	= "cstr",
+	[K_dup]		= "dup",
 	[K_print]   = "print",
 };
 
@@ -699,6 +744,63 @@ void createFromFile(char *fp, Program *p) {
 				}
 				da_append(p, f);
 				break;	
+			case (K_cstr):
+				f.ft = F_cstr;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_INT)) {
+					exit(1);
+				}
+				Node n5;
+				n5.t = T_Int;
+				n5.v.i = t.int_value;
+				f.n = n5;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
+			case (K_scat):
+				printf("[ERROR] scat not implemented\n");
+				exit(1);
+				f.ft = F_scat;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;	
+			case (K_scmp):
+				f.ft = F_scmp;
+				alexer_get_token(&l, &t);
+				//uint64_t expected_ct[] = {K_eq, K_ne}; // TODO: implement
+				//if (!alexer_expect_one_of_ids(&l, t, expected_ct, ALEXER_ARRAY_LEN(expected_ct))) {
+				//	exit(1);
+				//}
+				switch (ALEXER_INDEX(t.id)) {
+					case (K_eq):
+						f.ct = eq;
+						break;
+					case (K_ne):
+						f.ct = ne;
+						break;
+					default:
+						UNREACHABLE("compare type doesn't work for strings exist");
+				}
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
+			case (K_dup):
+				f.ft = F_dup;
+				alexer_get_token(&l, &t);
+				if (!alexer_expect_id(&l, t, ALEXER_PUNCT)) {
+					exit(1);
+				}
+				da_append(p, f);
+				break;
 			default:
 				UNREACHABLE("Function not implemented or doesnt exist");
 		}
